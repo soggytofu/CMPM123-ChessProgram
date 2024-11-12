@@ -3,7 +3,15 @@
 ![Chess Board](https://raw.githubusercontent.com/zaphodgjd/class-chess-123/main/chess/w_king.png)
 
 ## 🎯 Project Overview
-This repository contains a skeleton implementation of a Chess AI engine written in C++. The project is designed to teach fundamental concepts of game AI, including board representation, move generation, and basic game tree search algorithms.
+Regis Pak's implementaion of the skeleton implementation of a Chess AI engine written in C++. The project is designed to teach fundamental concepts of game AI, including board representation, move generation, and basic game tree search algorithms.
+
+This was created with windows 10, here is my images, but I'm not sure if this is right :P
+
+![Image1](MyImages/CMPM123ChessImg1.png)
+
+![Image2](MyImages/CMPM123ChessImg2.png)
+
+![Image3](MyImages/CMPM123ChessImg3.png)
 
 ### 🎓 Educational Purpose
 This project serves as a teaching tool for computer science students to understand:

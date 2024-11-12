@@ -1,17 +1,19 @@
 #pragma once
 #include "Game.h"
 #include "ChessSquare.h"
+#include <cstdint>
+// #include "magicbitboards.h"
 
 const int pieceSize = 64;
 
 enum ChessPiece {
     NoPiece = 0,
     Pawn = 1,
-    Knight,
-    Bishop,
-    Rook,
-    Queen,
-    King
+    Knight = 2,
+    Bishop = 3,
+    Rook = 4,
+    Queen = 5,
+    King = 6
 };
 
 //
@@ -25,6 +27,7 @@ public:
 
     // set up the board
     void        setUpBoard() override;
+    void        loadFromFEN(const std::string &s);
 
     Player*     checkForWinner() override;
     bool        checkForDraw() override;
@@ -39,12 +42,23 @@ public:
     void        stopGame() override;
     BitHolder& getHolderAt(const int x, const int y) override { return _grid[y][x]; }
 
-	void        updateAI() override;
+    void        updateAI() override;
     bool        gameHasAI() override { return true; }
 private:
     Bit *       PieceForPlayer(const int playerNumber, ChessPiece piece);
     const char  bitToPieceNotation(int row, int column) const;
 
     ChessSquare      _grid[8][8];
-};
+    uint64_t wPieces;
+    uint64_t bPieces;
+    uint64_t ratt(int sq, uint64_t wPieces, uint64_t bPieces); 
+    uint64_t batt(int sq, uint64_t wPieces, uint64_t bPieces); 
+    uint64_t katt(int sq, uint64_t wPieces, uint64_t bPieces); 
+    uint64_t natt(int sq, uint64_t wPieces, uint64_t bPieces); 
+    uint64_t patt(int sq, uint64_t wPieces, uint64_t bPieces); 
+    void        updatePieces(uint64_t& pieces, int check);
 
+    //Here is where I should put my bitboards?
+    //White pieces only
+    //Black pieces only
+};
