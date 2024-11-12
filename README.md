@@ -9,9 +9,9 @@ This was created with windows 10, here is my images, but I'm not sure if this is
 
 ![Image1](MyImages/CMPM123ChessImg1.png)
 
-![Image2](MyImages/CMPM123ChessImg2.png)
+![Image2](MyImages/CMPM123Img2.png)
 
-![Image3](MyImages/CMPM123ChessImg3.png)
+![Image3](MyImages/CMPM123Img3.png)
 
 ### 🎓 Educational Purpose
 This project serves as a teaching tool for computer science students to understand:
