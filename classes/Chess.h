@@ -34,6 +34,7 @@ public:
     std::string initialStateString() override;
     std::string stateString() override;
     void        setStateString(const std::string &s) override;
+    // bool        mouseDown(ImVec2 &location, Entity *entity) override;
     bool        actionForEmptyHolder(BitHolder& holder) override;
     bool        canBitMoveFrom(Bit& bit, BitHolder& src) override;
     bool        canBitMoveFromTo(Bit& bit, BitHolder& src, BitHolder& dst) override;
@@ -49,13 +50,17 @@ private:
     const char  bitToPieceNotation(int row, int column) const;
 
     ChessSquare      _grid[8][8];
+    std::vector<uint64_t> possibleMoves = std::vector<uint64_t>(64, 0ULL);
     uint64_t wPieces;
     uint64_t bPieces;
+    void        generateMoveList();
     uint64_t ratt(int sq, uint64_t wPieces, uint64_t bPieces); 
     uint64_t batt(int sq, uint64_t wPieces, uint64_t bPieces); 
     uint64_t katt(int sq, uint64_t wPieces, uint64_t bPieces); 
     uint64_t natt(int sq, uint64_t wPieces, uint64_t bPieces); 
     uint64_t patt(int sq, uint64_t wPieces, uint64_t bPieces); 
+    void        highlightMove(uint64_t moveBitboard);
+    void        removeHighlight();
     void        updatePieces(uint64_t& pieces, int check);
 
     //Here is where I should put my bitboards?

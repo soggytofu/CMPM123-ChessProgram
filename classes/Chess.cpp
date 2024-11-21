@@ -51,10 +51,14 @@ void Chess::setUpBoard()
     }
     wPieces = 0;
     bPieces = 0;
-    loadFromFEN("RNBQKBNR/PPPPPPPP/8/8/8/8/pppppppp/rnbqkbnr");
+
+    // loadFromFEN("RNBQKBNR/PPPPPPPP/8/8/8/8/pppppppp/rnbqkbnr");
+    loadFromFEN("8/PPPP4/8/8/8/8/4pppp/8");
+    // loadFromFEN("rnbqkbn/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR");
     // loadFromFEN("RRRRRRQR/8/8/8/8/8/8/bbbbbbbb");
 
     startGame();
+    generateMoveList();
 }
 
 
@@ -65,7 +69,7 @@ void Chess::loadFromFEN(const std::string &fen){
         {'q', Queen}, {'k', King}
     };
     int posCount = 0;  //Board position
-
+    // std::string reversed_fen(fen.rbegin(), fen.rend());
     for(char c : fen){
         if(c == ' '){  //End of FEN
             break;
@@ -111,53 +115,67 @@ bool Chess::canBitMoveFrom(Bit &bit, BitHolder &src)
     return true;
 }
 
+// bool Chess::mouseDown(ImVec2 &location, Entity *entity){
+    
+// }
+
 bool Chess::canBitMoveFromTo(Bit& bit, BitHolder& src, BitHolder& dst) { // Piece, Position, go to Position
-    int pieceTag = (bit.gameTag() > 128) ? bit.gameTag() - 128 : bit.gameTag();  //If black, remove 128 from gameTag
     ChessSquare* srcSquare = dynamic_cast<ChessSquare*>(&src);  //Grab location of start
     ChessSquare* dstSquare = dynamic_cast<ChessSquare*>(&dst);  //Grab location of end
-    int x = srcSquare->getColumn();
-    int y = srcSquare->getRow();
-    int total = (8*y)+x;  
-    int x2 = dstSquare->getColumn();
-    int y2 = dstSquare->getRow();
-    int total2 = (8*y2)+x2;  //Everything above just turns it into x, y, and square space
+    int total = srcSquare->getSquareIndex(); 
+    int total2 = dstSquare->getSquareIndex();  //Everything above just turns it into x, y, and square space
 
     int player = getCurrentPlayer()->playerNumber();
-    bool isWhite = (bit.gameTag() < 128) ? true : false;
     uint64_t cPieces = player == 0 ? wPieces : bPieces;  //Check pieces for which can be selected 
     bool isPlayable = (cPieces & (1ULL << total)) != 0;  //Is the selected piece apart of the player's pieces
 
-    if((isWhite && player == 0) || (!isWhite && player == 1)){  //Makes sure that you don't mix and match color and turn
-        if(pieceTag == Rook && isPlayable){
-            uint64_t result = ratt(total, wPieces, bPieces);
-            return (result & (1ULL << total2)) != 0;
-        }
-        if(pieceTag == Bishop && isPlayable){
-            uint64_t result = batt(total, wPieces, bPieces);
-            return (result & (1ULL << total2)) != 0;
-        }
-        if(pieceTag == Queen && isPlayable){
-            uint64_t result1 = ratt(total, wPieces, bPieces);
-            uint64_t result2 = batt(total, wPieces, bPieces);
-            result1 = result1 | result2;
-            return (result1 & (1ULL << total2)) != 0;
-        }
-        if(pieceTag == Pawn && isPlayable){
-            uint64_t result = patt(total, wPieces, bPieces);
-            return (result & (1ULL << total2)) != 0;
-        }
-        if(pieceTag == Knight && isPlayable){
-            uint64_t result = natt(total, wPieces, bPieces);
-            return (result & (1ULL << total2)) != 0;
-        }
-        if(pieceTag == King && isPlayable){
-            uint64_t result = katt(total, wPieces, bPieces);
-            return (result & (1ULL << total2)) != 0;
-        }
+    if(possibleMoves[total] != 0 && isPlayable){
+        highlightMove(possibleMoves[total]);
+        return (possibleMoves[total] & (1ULL << total2)) != 0;
     }
     return false;
 
 }
+
+void Chess::highlightMove(uint64_t moveBitboard){
+    for (int i = 0; i < 64; i++){
+        if (moveBitboard & (1ULL << i)) {
+            int rk = i / 8, fl = i % 8;
+            _grid[rk][fl].setMoveHighlighted(true);
+        }
+    }
+}
+
+void Chess::removeHighlight(){
+    for (int i = 0; i < 64; i++){
+        int rk = i / 8, fl = i % 8;
+        _grid[rk][fl].setMoveHighlighted(false);
+    }
+}
+/*
+Instead of current code, create a moves list using all the moves,
+then, go throughout the list isntead of checking one by one for more efficency
+and to highlight
+
+Each space needs to have this:
+Given square
+-every piece it can move
+-check if it check
+
+
+Use this void ChessSquare::setMoveHighlighted(bool highlighted)
+If you click off, turn off highlight
+
+Make a game state cpp file from 11/8, proffessor just posted it
+also create a bitboard.h from the progessors code
+
+So if you have a game list, then when making a new move, you 
+can check for enpessant
+
+put the moves into gamestate.cpp i think
+
+
+*/
 
 void Chess::bitMovedFromTo(Bit &bit, BitHolder &src, BitHolder &dst) { // Post Check piece, old position, new position
     int pieceTag = (bit.gameTag() > 128) ? bit.gameTag() - 128 : bit.gameTag();  //If black, remove 128 from gameTag
@@ -165,17 +183,26 @@ void Chess::bitMovedFromTo(Bit &bit, BitHolder &src, BitHolder &dst) { // Post C
     ChessSquare* dstSquare = dynamic_cast<ChessSquare*>(&dst);
     int x = srcSquare->getColumn();
     int y = srcSquare->getRow();
-    int total = (8*y)+x;
-
     int x2 = dstSquare->getColumn();
     int y2 = dstSquare->getRow();
-    int total2 = (8*y2)+x2;
+
 
     _grid[y][x].setGameTag(0);  //Removes old piece that grid was holding
     _grid[y2][x2].setGameTag(bit.gameTag());  //Updates the space's tag of what piece its holding
 
+    if(pieceTag == Pawn){
+        if(y2 == 7){
+            _grid[y2][x2].setGameTag(5);
+        }
+        if(y2 == 0){
+            _grid[y2][x2].setGameTag(133);
+        }
+    }
+    
+    removeHighlight();
     updatePieces(wPieces, 0);  //Update our bitbaords of white and black pieces
     updatePieces(bPieces, 1);
+    generateMoveList();
 
     //Eventually add more functionality
 
@@ -190,7 +217,48 @@ void Chess::stopGame()
 }
 
 
-uint64_t Chess::ratt(int sq, uint64_t wPieces, uint64_t bPieces) {  //Rook attack
+//
+// Generate a list of all possible moves, in this list it will have this
+// (Square, (Space it can move, special clause?))
+//
+void Chess::generateMoveList(){
+    for(int i = 0; i < 64; i++){
+        uint64_t result = 0ULL;
+        int rk = i / 8, fl = i % 8;
+        int whatPiece = _grid[rk][fl].gameTag();
+        bool isBlack = (whatPiece > 128) ? true : false;
+        uint64_t block = wPieces | bPieces;
+        uint64_t blockPieces = isBlack ? wPieces : bPieces; 
+        whatPiece = isBlack ? whatPiece - 128 : whatPiece;
+        if(whatPiece == 0){
+            result = 0ULL;
+            continue;
+        }
+        else if(whatPiece == Rook){
+            result = ratt(i, wPieces, bPieces);
+        }
+        else if(whatPiece == Bishop){
+            result = batt(i, wPieces, bPieces);
+        }
+        else if(whatPiece == Queen ){
+            result = ratt(i, wPieces, bPieces);
+            result |= batt(i, wPieces, bPieces);
+        }
+        else if(whatPiece == Pawn){
+            result = patt(i, wPieces, bPieces);
+        }
+        else if(whatPiece == Knight){
+            result = natt(i, wPieces, bPieces);
+        }
+        else if(whatPiece == King){
+            result = katt(i, wPieces, bPieces);
+        }
+        possibleMoves[i] = result;
+    }
+}
+
+
+uint64_t Chess::ratt(int sq, uint64_t wPieces, uint64_t bPieces){  //Rook attack
     uint64_t result = 0ULL;
     uint64_t block = wPieces | bPieces;
     int rk = sq / 8, fl = sq % 8, r, f;
@@ -210,9 +278,9 @@ uint64_t Chess::ratt(int sq, uint64_t wPieces, uint64_t bPieces) {  //Rook attac
     }
 
     //South
-    for(r = rk - 1; r >= 0; r--) {  //Same stuff as above, but different for loop
-        if(block & (1ULL << (fl + r * 8))) {  
-            if(blockPieces & (1ULL << (fl + r * 8))) { 
+    for(r = rk - 1; r >= 0; r--){  //Same stuff as above, but different for loop
+        if(block & (1ULL << (fl + r * 8))){  
+            if(blockPieces & (1ULL << (fl + r * 8))){ 
                 result |= (1ULL << (fl + r * 8)); 
             }
             break; 
@@ -222,8 +290,8 @@ uint64_t Chess::ratt(int sq, uint64_t wPieces, uint64_t bPieces) {  //Rook attac
 
     //East
     for(f = fl + 1; f <= 7; f++) {  //Same stuff as above, but different for loop
-        if(block & (1ULL << (f + rk * 8))) {  
-            if(blockPieces & (1ULL << (f + rk * 8))) {  
+        if(block & (1ULL << (f + rk * 8))){  
+            if(blockPieces & (1ULL << (f + rk * 8))){  
                 result |= (1ULL << (f + rk * 8)); 
             }
             break;  
@@ -232,9 +300,9 @@ uint64_t Chess::ratt(int sq, uint64_t wPieces, uint64_t bPieces) {  //Rook attac
     }
 
     //West
-    for(f = fl - 1; f >= 0; f--) {  //Same stuff as above, but different for loop
-        if(block & (1ULL << (f + rk * 8))) { 
-            if(blockPieces & (1ULL << (f + rk * 8))) { 
+    for(f = fl - 1; f >= 0; f--){  //Same stuff as above, but different for loop
+        if(block & (1ULL << (f + rk * 8))){ 
+            if(blockPieces & (1ULL << (f + rk * 8))){ 
                 result |= (1ULL << (f + rk * 8)); 
             }
             break; 
