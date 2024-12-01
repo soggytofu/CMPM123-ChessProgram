@@ -1,5 +1,6 @@
 #include "Chess.h"
 #include <cstdint>
+#include <cmath>
 
 const int AI_PLAYER = 1;
 const int HUMAN_PLAYER = -1;
@@ -53,9 +54,9 @@ void Chess::setUpBoard()
     bPieces = 0;
 
     // loadFromFEN("RNBQKBNR/PPPPPPPP/8/8/8/8/pppppppp/rnbqkbnr");
-    loadFromFEN("8/PPPP4/8/8/8/8/4pppp/8");
-    // loadFromFEN("rnbqkbn/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR");
-    // loadFromFEN("RRRRRRQR/8/8/8/8/8/8/bbbbbbbb");
+    // loadFromFEN("K7/PPPPPP2/8/8/8/8/2pppppp/7k");
+    loadFromFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR");
+    // loadFromFEN("3k4/8/8/8/8/8/8/R3K3");
 
     startGame();
     generateMoveList();
@@ -64,42 +65,115 @@ void Chess::setUpBoard()
 
     // helper function that FEN notation to fill board
 void Chess::loadFromFEN(const std::string &fen){
-    static const std::unordered_map<char, ChessPiece> pieceMap = {  //Creates a map for the notation to the piece
+    static const std::unordered_map<char, ChessPiece> pieceMap = {
         {'p', Pawn}, {'r', Rook}, {'n', Knight}, {'b', Bishop},
         {'q', Queen}, {'k', King}
     };
-    int posCount = 0;  //Board position
-    // std::string reversed_fen(fen.rbegin(), fen.rend());
-    for(char c : fen){
-        if(c == ' '){  //End of FEN
-            break;
-        }
-        if(c == '/'){  //NewLine for Fen
-            continue;
-        }
-        else if(isdigit(c)){
-            posCount += c -'0';
-        }
-        else{
-
-            bool isWhite = isupper(c);  //Checks if uppercase letter which = white pieces
-            char lowerC = tolower(c);  //If white, sets to lowercase for map finding
+    int posCount = 0;  // Tracks position on the board (0 to 63)
+    for (char c : fen) {
+        if (c == '/') {
+            continue;  // Skip rank separators
+        } else if (isdigit(c)) {
+            posCount += c - '0';  // Empty squares
+        } else {
+            bool isWhite = isupper(c);  // Determine piece color
+            char lowerC = tolower(c);  // Normalize to lowercase for map lookup
             auto piece = pieceMap.find(lowerC);
 
-            if (piece != pieceMap.end()) {  //This will set all the bit and grid information
-                Bit* bit = PieceForPlayer(isWhite ? 0 : 1, piece->second); 
-                bit->setPosition(_grid[posCount/8][posCount%8].getPosition());  //Sets bit position
-                bit->setParent(&_grid[posCount/8][posCount%8]);  //Sets the grid parent, idk really
-                bit->setGameTag(isWhite ? piece->second : piece->second + 128);  //What piece is it and color
-                _grid[posCount/8][posCount%8].setGameTag(isWhite ? piece->second : piece->second + 128);;  //Grid gets to hold onto piece and color
-                _grid[posCount/8][posCount%8].setBit(bit);  //Set the bit in palce too
-                (isWhite ? wPieces : bPieces) |= (1ULL << posCount); 
+            if (piece != pieceMap.end()) {
+                int row = 7 - (posCount / 8);  // Convert to top-left starting board position
+                int col = posCount % 8;
+
+                Bit* bit = PieceForPlayer(isWhite ? 0 : 1, piece->second);
+                bit->setPosition(_grid[row][col].getPosition());
+                bit->setParent(&_grid[row][col]);
+                bit->setGameTag(isWhite ? piece->second : piece->second + 128);
+                _grid[row][col].setGameTag(isWhite ? piece->second : piece->second + 128);
+                _grid[row][col].setBit(bit);
+                (isWhite ? wPieces : bPieces) |= (1ULL << (row * 8 + col));
             }
             posCount++;
         }
     }
+    whiteRookLeft = true;
+    whiteRookRight = true;
+    whiteKing = true;
+    blackRookLeft = true;
+    blackRookRight = true;
+    blackKing = true;
 }
 
+
+//For future use if i need to yoink in the last part of a fen string
+// void Chess::loadFromFEN(const std::string &fen) {
+//     static const std::unordered_map<char, ChessPiece> pieceMap = {
+//         {'p', Pawn}, {'r', Rook}, {'n', Knight}, {'b', Bishop},
+//         {'q', Queen}, {'k', King}
+//     };
+
+//     // Split the FEN string into parts
+//     std::istringstream fenStream(fen);
+//     std::string boardPart, turnPart, castlingPart, enPassantPart;
+//     int halfmoveClock, fullmoveNumber;
+
+//     // Read the FEN parts
+//     fenStream >> boardPart >> turnPart >> castlingPart >> enPassantPart >> halfmoveClock >> fullmoveNumber;
+
+//     // Clear the board before parsing
+//     // clearBoard();
+
+//     // Parse the board part
+//     int posCount = 0;  // Tracks position on the board (0 to 63)
+//     for (char c : boardPart) {
+//         if (c == '/') {
+//             continue;  // Skip rank separators
+//         } else if (isdigit(c)) {
+//             posCount += c - '0';  // Empty squares
+//         } else {
+//             bool isWhite = isupper(c);  // Determine piece color
+//             char lowerC = tolower(c);  // Normalize to lowercase for map lookup
+//             auto piece = pieceMap.find(lowerC);
+
+//             if (piece != pieceMap.end()) {
+//                 int row = 7 - (posCount / 8);  // Convert to top-left starting board position
+//                 int col = posCount % 8;
+
+//                 Bit* bit = PieceForPlayer(isWhite ? 0 : 1, piece->second);
+//                 bit->setPosition(_grid[row][col].getPosition());
+//                 bit->setParent(&_grid[row][col]);
+//                 bit->setGameTag(isWhite ? piece->second : piece->second + 128);
+//                 _grid[row][col].setGameTag(isWhite ? piece->second : piece->second + 128);
+//                 _grid[row][col].setBit(bit);
+//                 (isWhite ? wPieces : bPieces) |= (1ULL << (row * 8 + col));
+//             }
+//             posCount++;
+//         }
+//     }
+
+//     // // Set starting player
+//     // // startingPlayer(turnPart == "w" ? 0 : 1);
+
+//     // whiteRookRight = castlingPart.find('K') != std::string::npos;
+//     // whiteRookLeft = castlingPart.find('Q') != std::string::npos;
+//     // whiteKing = (whiteRookRight || whiteRookLeft) ? true : false;
+
+//     // blackRookRight = castlingPart.find('k') != std::string::npos;
+//     // blackRookLeft = castlingPart.find('q') != std::string::npos;
+//     // blackKing = (blackRookRight || blackRookLeft) ? true : false;
+
+//     // // Parse en passant
+//     // if (enPassantPart != "-") {
+//     //     int file = enPassantPart[0] - 'a';  // File (column) from 'a' to 'h'
+//     //     int rank = enPassantPart[1] - '1';  // Rank (row) from '1' to '8'
+//     //     enPessantHolder = (7 - rank) * 8 + file;  // Convert to board index (top-left to bottom-left)
+//     // } else {
+//     //     enPessantHolder = -1;  // No en passant square
+//     // }
+
+//     // // Store halfmove clock and fullmove number
+//     // // this->halfmoveClock = halfmoveClock;
+//     // // this->fullmoveNumber = fullmoveNumber;
+// }
 
 //
 // about the only thing we need to actually fill out for tic-tac-toe
@@ -152,6 +226,7 @@ void Chess::removeHighlight(){
         _grid[rk][fl].setMoveHighlighted(false);
     }
 }
+
 /*
 Instead of current code, create a moves list using all the moves,
 then, go throughout the list isntead of checking one by one for more efficency
@@ -178,25 +253,109 @@ put the moves into gamestate.cpp i think
 */
 
 void Chess::bitMovedFromTo(Bit &bit, BitHolder &src, BitHolder &dst) { // Post Check piece, old position, new position
+    bool isBlack = (bit.gameTag() > 128) ? true : false;
     int pieceTag = (bit.gameTag() > 128) ? bit.gameTag() - 128 : bit.gameTag();  //If black, remove 128 from gameTag
     ChessSquare* srcSquare = dynamic_cast<ChessSquare*>(&src);
     ChessSquare* dstSquare = dynamic_cast<ChessSquare*>(&dst);
     int x = srcSquare->getColumn();
     int y = srcSquare->getRow();
+    int xy = srcSquare->getSquareIndex();
     int x2 = dstSquare->getColumn();
     int y2 = dstSquare->getRow();
-
+    int xy2 = dstSquare->getSquareIndex();
 
     _grid[y][x].setGameTag(0);  //Removes old piece that grid was holding
     _grid[y2][x2].setGameTag(bit.gameTag());  //Updates the space's tag of what piece its holding
 
+    if(pieceTag != Pawn){
+        enPessantHolder = -1;
+    }
     if(pieceTag == Pawn){
-        if(y2 == 7){
-            _grid[y2][x2].setGameTag(5);
+        if(xy2 == enPessantHolder + 8){  //White En Pessant
+            _grid[y2-1][x2].destroyBit();
+            _grid[y2-1][x2].setGameTag(0);
         }
-        if(y2 == 0){
-            _grid[y2][x2].setGameTag(133);
+        if(xy2 == enPessantHolder - 8){  //Black En Pessant
+            _grid[y2+1][x2].destroyBit();
+            _grid[y2+1][x2].setGameTag(0);
         }
+        int epCheck = std::abs(y - y2);
+        if(epCheck == 2){
+            enPessantHolder = xy2;
+        }
+        if(y2 == 7){  //White pawn promotion to queen automatically
+            Bit* bit = PieceForPlayer(0, Queen); 
+            bit->setPosition(_grid[y2][x2].getPosition());  //Sets bit position
+            bit->setParent(&_grid[y2][x2]);  //Sets the grid parent, idk really
+            bit->setGameTag(5);  //What piece is it and color
+            _grid[y2][x2].setGameTag(5);  //Grid gets to hold onto piece and color
+            _grid[y2][x2].setBit(bit);  //Set the bit in palce too
+        }
+        if(y2 == 0){  //Black pawn promotion to queen automatically
+            Bit* bit2 = PieceForPlayer(1, Queen); 
+            bit2->setPosition(_grid[y2][x2].getPosition());  //Sets bit position
+            bit2->setParent(&_grid[y2][x2]);  //Sets the grid parent, idk really
+            bit2->setGameTag(133);  //What piece is it and color
+            _grid[y2][x2].setGameTag(133);  //Grid gets to hold onto piece and color
+            _grid[y2][x2].setBit(bit2);  //Set the bit in palce too
+        }
+    }
+    if(pieceTag == Rook){
+        whiteRookLeft = (xy == 0) ? false : whiteRookLeft;
+        whiteRookRight = (xy == 7) ? false : whiteRookRight;
+        blackRookLeft = (xy == 56) ? false : blackRookLeft;
+        blackRookRight = (xy == 63) ? false : blackRookRight;
+    }
+    if(pieceTag == King){
+        if(xy2 == 2 && whiteKing){
+            whiteRookLeft = false;
+            whiteRookRight = false;
+            _grid[0][0].destroyBit();
+            _grid[0][0].setGameTag(0);
+            Bit* bit = PieceForPlayer(0, Rook);  //Me lazy, me copy paste old code to delete rook and make new one XD
+            bit->setPosition(_grid[0][3].getPosition()); 
+            bit->setParent(&_grid[0][3]); 
+            bit->setGameTag(4); 
+            _grid[0][3].setGameTag(4);  
+            _grid[0][3].setBit(bit);  
+        }
+        if(xy2 == 6 && whiteKing){
+            whiteRookLeft = false;
+            whiteRookRight = false;
+            _grid[0][7].destroyBit();
+            _grid[0][7].setGameTag(0);
+            Bit* bit = PieceForPlayer(0, Rook);  //Me lazy, me copy paste old code to delete rook and make new one XD
+            bit->setPosition(_grid[0][5].getPosition()); 
+            bit->setParent(&_grid[0][5]); 
+            bit->setGameTag(2); 
+            _grid[0][5].setGameTag(2);  
+            _grid[0][5].setBit(bit);  
+        }
+        if(xy2 == 58 && blackKing){
+            blackRookLeft = false;
+            blackRookRight = false;
+            _grid[7][0].destroyBit();
+            _grid[7][0].setGameTag(0);
+            Bit* bit = PieceForPlayer(1, Rook);  //Me lazy, me copy paste old code to delete rook and make new one XD
+            bit->setPosition(_grid[7][3].getPosition()); 
+            bit->setParent(&_grid[7][3]); 
+            bit->setGameTag(130); 
+            _grid[7][3].setGameTag(132);  
+            _grid[7][3].setBit(bit);  
+        }
+        if(xy2 == 62 && blackKing){
+            blackRookLeft = false;
+            blackRookRight = false;
+            _grid[7][7].destroyBit();
+            _grid[7][7].setGameTag(0);
+            Bit* bit = PieceForPlayer(1, Rook);  //Me lazy, me copy paste old code to delete rook and make new one XD
+            bit->setPosition(_grid[7][5].getPosition()); 
+            bit->setParent(&_grid[7][5]); 
+            bit->setGameTag(130); 
+            _grid[7][5].setGameTag(132);  
+            _grid[7][5].setBit(bit);  
+        }
+        isBlack ? blackKing = false : whiteKing = false;
     }
     
     removeHighlight();
@@ -388,10 +547,16 @@ uint64_t Chess::patt(int sq, uint64_t wPieces, uint64_t bPieces) {  //Pawn attac
                 result |= (1ULL << (sq + 7)); 
             }
         }
+        if(enPessantHolder == (sq - 1)){  //En Pessant left
+            result |= (1ULL << (sq + 7)); 
+        }
         if((block & (1ULL << (sq + 9)))){  //Capture right
             if(blockPieces & (1ULL << (sq + 9))) { 
                 result |= (1ULL << (sq + 9)); 
             }
+        }
+        if(enPessantHolder == (sq + 1)){  //En Pessant right
+            result |= (1ULL << (sq + 9)); 
         }
     }
     if(isBlack){
@@ -406,10 +571,16 @@ uint64_t Chess::patt(int sq, uint64_t wPieces, uint64_t bPieces) {  //Pawn attac
                 result |= (1ULL << (sq - 7)); 
             }
         }
+        if(enPessantHolder == (sq - 1)){  //En Pessant left
+            result |= (1ULL << (sq - 9)); 
+        }
         if((block & (1ULL << (sq - 9)))){  //Capture right
             if(blockPieces & (1ULL << (sq - 9))){ 
                 result |= (1ULL << (sq - 9)); 
             }
+        }
+        if(enPessantHolder == (sq + 1)){  //En Pessant right
+            result |= (1ULL << (sq - 7)); 
         }
     }
 
@@ -425,7 +596,7 @@ uint64_t Chess::natt(int sq, uint64_t wPieces, uint64_t bPieces) {  //Knight att
     uint64_t blockPieces = isBlack ? bPieces : wPieces;
     int knightMoves[8] = {17, 15, 10, 6, -6, -10, -15, -17};  //Knight moves
 
-    for(int move : knightMoves) {
+    for(int move : knightMoves){
         int targetSq = sq + move;
         if(targetSq < 0 || targetSq > 63) continue;  //Don't overshoot the board
 
@@ -448,7 +619,7 @@ uint64_t Chess::katt(int sq, uint64_t wPieces, uint64_t bPieces){
     uint64_t blockPieces = isBlack ? bPieces : wPieces;
     int kingMoves[8] = {7, 8, 9, -1, 1, -9, -8, -7};  //King moves
 
-    for(int move : kingMoves) {
+    for(int move : kingMoves){
         int targetSq = sq + move;
         if(targetSq < 0 || targetSq > 63) continue;
         if((sq % 8 == 0 && (move == -1 || move == -9 || move == 7)) ||  //Edge cases if king is left or right
@@ -457,6 +628,22 @@ uint64_t Chess::katt(int sq, uint64_t wPieces, uint64_t bPieces){
         }
         uint64_t targetPos = 1ULL << targetSq;
         result |= (blockPieces & targetPos) ? 0ULL : targetPos;
+    }
+    if(isBlack && blackKing){  //Castling for black king
+        if(blackRookRight && _grid[7][5].gameTag() == 0 && _grid[7][6].gameTag() == 0){ 
+            result |= (1ULL << 62);  //King castling
+        }
+        if(blackRookLeft && _grid[7][1].gameTag() == 0 && _grid[7][2].gameTag() == 0 && _grid[7][3].gameTag() == 0){
+            result |= (1ULL << 58);  //Queen castling
+        }
+    }
+    if(!isBlack && whiteKing){  //Castling for white king
+        if(whiteRookRight && _grid[0][5].gameTag() == 0 && _grid[0][6].gameTag() == 0){
+            result |= (1ULL << 6);  // King castling
+        }
+        if(whiteRookLeft && _grid[0][1].gameTag() == 0 && _grid[0][2].gameTag() == 0 && _grid[0][3].gameTag() == 0){
+            result |= (1ULL << 2);  // Queen castling
+        }
     }
     return result;
 }

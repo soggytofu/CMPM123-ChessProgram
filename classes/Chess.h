@@ -53,6 +53,13 @@ private:
     std::vector<uint64_t> possibleMoves = std::vector<uint64_t>(64, 0ULL);
     uint64_t wPieces;
     uint64_t bPieces;
+    int     enPessantHolder;
+    bool    whiteRookLeft;
+    bool    whiteRookRight;
+    bool    whiteKing;
+    bool    blackRookLeft;
+    bool    blackRookRight;
+    bool    blackKing;
     void        generateMoveList();
     uint64_t ratt(int sq, uint64_t wPieces, uint64_t bPieces); 
     uint64_t batt(int sq, uint64_t wPieces, uint64_t bPieces); 
