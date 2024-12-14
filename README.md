@@ -2,6 +2,10 @@
 
 ## 🎯 Project Overview
 
+Oh yeah, if your reading this, could just a reminder for a regrade for the previous assignemnt.
+I TA for another class, I totally forget about regrading assignments, so I just put it here :P
+Thank you very much
+
 For this assignment, I added the fen functionality, castling, pawn promotion, and en pessant.
 
 For fen string functionality is line 58, where you can use the function loadFromFEN and put in a 
