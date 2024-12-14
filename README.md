@@ -1,143 +1,25 @@
 # Chess AI Implementation Project
 
-![Chess Board](https://raw.githubusercontent.com/zaphodgjd/class-chess-123/main/chess/w_king.png)
-
 ## 🎯 Project Overview
-Regis Pak's implementaion of the skeleton implementation of a Chess AI engine written in C++. The project is designed to teach fundamental concepts of game AI, including board representation, move generation, and basic game tree search algorithms.
 
-This was created with windows 10, here is my images, but I'm not sure if this is right :P
+For this assignment, I added the fen functionality, castling, pawn promotion, and en pessant.
 
-![Image1](MyImages/CMPM123ChessImg1.png)
+For fen string functionality is line 58, where you can use the function loadFromFEN and put in a 
+fen string. The function for it is right below on line 67. 
 
-![Image2](MyImages/CMPM123Img2.png)
+For Castling, theres a check for each rook in the h file on line 57-62, Each one is labeled 
+color-Rook-side, so whiteRookRight would be an example to see if the right most white rook has
+moved to be allowed to castle. Also, there is a check for the white and black king to see if 
+it has moved at all either. Caslting is dealt in the function bitMovedFromTo and Katt where it
+starts from line 614 on the king attack. There is a check to see if both pieces for a castle
+has not moved, to then allow it. Finally, on line 309, you can see if the king funcitonality to
+allow the king to swap with the rook and disable castling for other pieces.
 
-![Image3](MyImages/CMPM123Img3.png)
+Castling is a quick check to see if a pawn in bitMovedFromTo on line 286 to see if a pawn moved 
+has reached the end of the board, then create a queen in its place.
 
-### 🎓 Educational Purpose
-This project serves as a teaching tool for computer science students to understand:
-- Game state representation
-- Object-oriented design in C++
-- Basic AI concepts in game playing
-- Bitboard operations and chess piece movement
-- FEN (Forsyth–Edwards Notation) for chess position representation
+Finally, en pessant is checked first to see if a pawn has moved 2 spaces recently in bitMovedFromTo
+on line 282. Then, in patt on line 530, you check to see if in its attack, and if that en pessant
+piece is directly left or right, then allow for the attack. Finally, you go back to bitMovedFromTo
+and delete it accordingly.
 
-## 🔧 Technical Architecture
-
-### Key Components
-1. **Chess Class**: Core game logic implementation
-   - Board state management
-   - Move validation
-   - Game state evaluation
-   - AI player implementation
-
-2. **Piece Representation**
-   - Unique identifiers for each piece type
-   - Sprite loading and rendering
-   - Movement pattern definitions
-
-3. **Board Management**
-   - 8x8 grid representation
-   - Piece positioning
-   - Move history tracking
-   - FEN notation support
-
-## 🚀 Getting Started
-
-### Prerequisites
-- C++ compiler with C++11 support or higher
-- Image loading library for piece sprites
-- CMake 3.10 or higher
-
-### Building the Project
-```bash
-mkdir build
-cd build
-cmake ..
-make
-```
-
-### Running Tests
-```bash
-./chess_tests
-```
-
-## 📝 Implementation Details
-
-### Current Features
-- Basic board setup and initialization
-- Piece movement validation framework
-- FEN notation parsing and generation
-- Sprite loading for chess pieces
-- Player turn management
-
-### Planned Features
-- [ ] AI move generation
-- [ ] Position evaluation
-- [ ] Opening book integration
-- [ ] Advanced search algorithms
-- [ ] Game state persistence
-
-## 🔍 Code Examples
-
-### Piece Movement Validation
-```cpp
-bool Chess::canBitMoveFromTo(Bit& bit, BitHolder& src, BitHolder& dst) {
-    // TODO: Implement piece-specific movement rules
-    return false;
-}
-```
-
-### FEN Notation Generation
-```cpp
-const char Chess::bitToPieceNotation(int row, int column) const {
-    if (row < 0 || row >= 8 || column < 0 || column >= 8) {
-        return '0';
-    }
-    // Implementation details for FEN notation
-}
-```
-
-## 📚 Class Assignment Structure
-
-### Phase 1: Board Setup
-- Implement piece placement
-- Setup initial board state
-- Validate board representation
-
-### Phase 2: Move Generation
-- Implement basic piece movements
-- Add move validation
-- Implement special moves (castling, en passant)
-
-### Phase 3: AI Implementation
-- Develop position evaluation
-- Implement minimax algorithm
-- Add alpha-beta pruning
-- Basic opening book
-
-## 🤝 Contributing
-Students are encouraged to:
-1. Fork the repository
-2. Create a feature branch
-3. Implement assigned components
-4. Submit their fork for review
-
-## 🔒 Code Style and Standards
-- Use consistent indentation (4 spaces)
-- Follow C++ naming conventions
-- Document all public methods
-- Include unit tests for new features
-
-## 📄 License
-This project is licensed under the MIT License.
-
-## 👥 Contributors
-- [Your Name] - Initial work
-- [Student Names] - Implementation and testing
-
-## 🙏 Acknowledgments
-- Chess piece sprites from [Wikipedia](https://en.wikipedia.org/wiki/Chess_piece)
-- Original game engine framework by [ocornut](https://github.com/ocornut/imgui)
-
----
-*This README is part of an educational project and is intended to serve as an example of good documentation practices.*
